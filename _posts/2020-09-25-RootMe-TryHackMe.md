@@ -99,7 +99,7 @@ Nmap done: 1 IP address (1 host up) scanned in 11.10 seconds
 Como dijimos son ssh y http asi que vamos a visitar la web
 [Web-RootMe](http://rootme.thm)
 
-![](https://alvar-yoel.github.io/images/rootme-pag.PNG)
+![](https://alvar-yoel.github.io/images/RootMe/rootme-pag.PNG)
 
 ## [](#header-4)Fuzzing
 Ahora tenemos esa pagina web vamos a enumerar sitios web para ello utilizaremos **wfuzz**
@@ -127,7 +127,7 @@ ID           Response   Lines    Word       Chars       Payload
 Ahora iremos a _/panel/_ alli veremos un sitio para subir archivos
 [Panel-RootMe](http://rootme.thm/panel)
 
-![](https://alvar-yoel.github.io/images/panel.PNG)
+![](https://alvar-yoel.github.io/images/RootMe/panel.PNG)
 
 
 # [](#header-4)Explotacion
@@ -285,7 +285,7 @@ function printit ($string) {
 ?> 
 ```
 Intentaremos subir el archivo y veremos que no nos deja
-![](https://alvar-yoel.github.io/images/php.PNG)
+![](https://alvar-yoel.github.io/images/RootMe/php.PNG)
 
 Asique lo que vamos a hacer es cambiar el **php** a **php5**
 ```shell
@@ -293,18 +293,18 @@ parrot-hacking@RootMe:~$ mv reverse.php reverse.php5
 ```
 
 Ahora lo que haremos sera subir el archivo con esa extension **.php5** y veremos que si que funciona
-![](https://alvar-yoel.github.io/images/php5.PNG)
+![](https://alvar-yoel.github.io/images/RootMe/php5.PNG)
 
 Despues de que se haya subido iremos a _/uploads/_ y vemos que esta alli nuestra **reverse.php5**
 [Uploads-RootMe](http://rootme.thm/uploads)
-![](https://alvar-yoel.github.io/images/reverse.PNG)
+![](https://alvar-yoel.github.io/images/RootMe/reverse.PNG)
 
 Ahora nos pondremos en el puerto 1234 en escucha con netcat
 ```shell
 parrot-hacking@RootMe:~$ nc -nlvp 1234
 ```
 Y pincharemos en **reverse.php5**
-![](https://alvar-yoel.github.io/images/reverse.PNG)
+![](https://alvar-yoel.github.io/images/RootMe/reverse.PNG)
 
 Y veremos que _awesome_ estamos dentro de la maquina
 ```shell
@@ -381,10 +381,10 @@ www-data@rootme:/$ find / -perm -4000 2>/dev/null
 
 Y vemos que _/usr/bin/python_ es un permiso **SUID**, asique iremos a **GFTOBins** para ver si podemos convertirnos en sudo y vemos que si que tiene explotacion de servicios **SUID**
 [GFTOBins](https://gtfobins.github.io/#)
-![](https://alvar-yoel.github.io/images/python.PNG)
+![](https://alvar-yoel.github.io/images/RootMe/python.PNG)
 
 Entraremos en **SUID** y veremos el codigo que tendremos que poner
-![](https://alvar-yoel.github.io/images/SUID.PNG)
+![](https://alvar-yoel.github.io/images/RootMe/SUID.PNG)
 
 Ahora lo probaremos en la maquina victima y chim pum tenemos **root** en la maquina
 ```shell

